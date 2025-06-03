@@ -13,8 +13,6 @@ def generate_launch_description():
     default_model_path = urdf_tutorial_path / 'urdf/piper_description.xacro'
     default_rviz_config_path = urdf_tutorial_path / 'rviz/piper_ctrl.rviz'
 
-    gui_arg = DeclareLaunchArgument(name='gui', default_value='false', choices=['true', 'false'],
-                                    description='Flag to enable joint_state_publisher_gui')
     model_arg = DeclareLaunchArgument(name='model', default_value=str(default_model_path),
                                       description='Absolute path to robot urdf file')
     rviz_arg = DeclareLaunchArgument(name='rvizconfig', default_value=str(default_rviz_config_path),
@@ -22,7 +20,7 @@ def generate_launch_description():
 
     left_robot_description = ParameterValue(Command(['xacro ', LaunchConfiguration('model')]),
                                        value_type=str)
-    right_robot_description = ParameterValue(Command(['xacro ', LaunchConfiguration('model'), " robot_namespace:=right_arm spawn_world_link:=true"]),
+    right_robot_description = ParameterValue(Command(['xacro ', LaunchConfiguration('model'), " robot_namespace:=right_arm"]),
                                        value_type=str)
 
     robot_state_publisher_node = Node(
@@ -30,10 +28,6 @@ def generate_launch_description():
         executable='robot_state_publisher',
         parameters=[{'robot_description': left_robot_description}],
         namespace='left_arm',
-        # remappings=[
-        #     ('/joint_states', 'left_arm/joint_states'),
-        #     ('/robot_description', 'left_arm/robot_description'),
-        # ]
     )
 
     robot_state_publisher_node2 = Node(
@@ -42,23 +36,6 @@ def generate_launch_description():
         name='robot_state_publisher_node2',
         parameters=[{'robot_description': right_robot_description}],
         namespace='right_arm',
-        # remappings=[
-        #     ('/joint_states', 'right_arm/joint_states'),
-        #     ('/robot_description', 'right_arm/robot_description'),
-        # ]
-    )
-
-    # Depending on gui parameter, either launch joint_state_publisher or joint_state_publisher_gui
-    joint_state_publisher_node = Node(
-        package='joint_state_publisher',
-        executable='joint_state_publisher',
-        condition=UnlessCondition(LaunchConfiguration('gui'))
-    )
-
-    joint_state_publisher_gui_node = Node(
-        package='joint_state_publisher_gui',
-        executable='joint_state_publisher_gui',
-        condition=IfCondition(LaunchConfiguration('gui'))
     )
 
     rviz_node = Node(
@@ -69,21 +46,17 @@ def generate_launch_description():
         arguments=['-d', LaunchConfiguration('rvizconfig')],
     )
 
-
     node1 = Node(package = "tf2_ros", 
                        executable = "static_transform_publisher",
-                       arguments = ["0", "0", "0", "0", "0", "0", "world", "left_arm_base_link"])
+                       arguments = ["-0.5", "0", "0", "0", "0", "0", "world", "left_arm_base_link"])
 
     node2 = Node(package = "tf2_ros", 
                        executable = "static_transform_publisher",
-                       arguments = ["0", "0", "0", "0", "0", "0", "world", "right_arm_base_link"])
+                       arguments = ["0.5", "0", "0", "3.141592", "0", "0", "world", "right_arm_base_link"])
     
     return LaunchDescription([
-        gui_arg,
         model_arg,
         rviz_arg,
-        # joint_state_publisher_node,
-        joint_state_publisher_gui_node,
         robot_state_publisher_node,
         robot_state_publisher_node2,
         rviz_node,
